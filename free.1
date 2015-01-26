@@ -1,0 +1,51 @@
+.TH FREE 1 "January 2015" "User Commands"
+.SH NAME
+free \- Display amount of free and used memory in the system
+.SH SYNOPSIS
+.B free
+.RI [ options ]
+.SH DESCRIPTION
+.B free
+displays the total amount of free and used physical and swap memory in the
+system. The displayed columns are:
+.TP
+\fBtotal\fR
+Total installed memory 
+.TP
+\fBused\fR
+Used memory
+.TP
+\fBfree\fR
+Unused memory
+
+.SH OPTIONS
+.TP
+\fB\-b\fR
+Display the amount of memory in bytes. This is the default.
+.TP
+\fB\-k\fR
+Display the amount of memory in kilobytes.
+.TP
+\fB\-m\fR
+Display the amount of memory in megabytes.
+.TP
+\fB\-s\fR
+Continuously display the result delay
+.I seconds
+apart.
+.TP
+\fB\-h\fR
+Print help.
+.TP
+\fB\-V\fR
+Display version information.
+.PD
+.SH "SEE ALSO"
+.BR ps (1),
+.BR top "(1),
+.BR vm_stat (8).
+.SH AUTHORS
+Written by Darren Kirby.
+.SH "REPORTING BUGS"
+Please send bug reports to <bulliver@gmail.com>
+.UE
