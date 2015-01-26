@@ -67,16 +67,16 @@ int main(int argc, char *argv[]) {
                 break;
             case 'h':
                 show_help();
-                exit(0);
+                exit(EXIT_SUCCESS);
                 break;
             case 'V':
                 show_version();
-                exit(0);
+                exit(EXIT_SUCCESS);
                 break;
             case '?':
             default:
                 show_help();
-                exit(-1);
+                exit(EXIT_FAILURE);
         }
     }
 
