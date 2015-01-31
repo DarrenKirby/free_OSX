@@ -21,13 +21,6 @@
  ***************************************************************************/
 
 
-/* free.c - free for OS X
- *
- * sysctl hw.memsize (others) man 3 sysctl
- * popen vm_stat
- * vm.swapusage
- */
-
 #ifndef _FREE_H_
 #define _FREE_H_
 

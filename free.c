@@ -33,9 +33,12 @@ long int fmt(char base, long int n) {
 }
 
 int get_free(char base) {
-    get_total_mem();
-    get_used_mem();
-    get_swap();
+    if (get_total_mem() != 0)
+        printf("Could not get total memory\n");
+    if (get_used_mem() != 0)
+        printf("Could not obtain used memory\n");
+    if (get_swap() != 0)
+        printf("Could not obtain swap memory\n");
 
     printf("\t%10s\t%10s\t%10s\n", "Total", "Used", "Free");
     printf("Mem:\t%10ld\t%10ld\t%10ld\n", fmt(base, m_info.mem_total),fmt(base, m_info.mem_used),fmt(base, m_info.mem_free));
@@ -82,12 +85,14 @@ int main(int argc, char *argv[]) {
 
     if (polling == 1) {
         for (;;) {
-            get_free(base);
+            if (get_free(base) != 0)
+                exit(EXIT_FAILURE);
             sleep(poll_freq);
             printf("\n");
         }
     } else {
-        get_free(base);
+        if (get_free(base) != 0)
+            exit(EXIT_FAILURE);
         exit(EXIT_SUCCESS);
     }
 
