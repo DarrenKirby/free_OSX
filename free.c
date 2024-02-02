@@ -1,7 +1,7 @@
 /***************************************************************************
  *   free.c - free for OS X                                                *
  *                                                                         *
- *   Copyright (C) 2015 by Darren Kirby                                    *
+ *   Copyright (C) 2015 - 2024 by Darren Kirby                             *
  *   bulliver@gmail.com                                                    *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -20,17 +20,110 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-#include "free.h"
+
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <signal.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/sysctl.h>
+#include <errno.h>
+#include <stdint.h>
 
 
-long int fmt(char base, long int n) {
-    if (base == 'm')
-        return n / 1024 / 1024;
-    else if (base == 'k')
-        return n / 1024;
-    else
-        return n;
+#define APPNAME    "free"
+#define APPVERSION "0.8"
+
+
+struct Meminfo {
+
+    int64_t mem_total;
+    int64_t mem_used;
+    int64_t mem_free;
+
+    int64_t swap_total;
+    int64_t swap_used;
+    int64_t swap_free;
+} m_info;
+
+
+int get_total_mem(void) {
+    size_t size;
+    int64_t buf;
+    size = sizeof(int64_t);
+
+    if (sysctlbyname("hw.memsize", &buf, &size, NULL, 0) != 0) {
+        fprintf(stderr, "Could not collect VM info, errno %d - %s",
+                errno, strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+
+    m_info.mem_total = buf;
+    return 0;
 }
+
+
+int get_used_mem(void) {
+    FILE *fd;
+
+    if ((fd = popen("vm_stat", "r")) == NULL) {
+        fprintf(stderr, "popen failed, errno %d - %s",
+                errno, strerror(errno));
+    }
+
+    char *line = NULL;
+    size_t linecap = 0;
+
+    /* first line is throwaway */
+    getline(&line, &linecap, fd);
+    int64_t value[3];
+
+    for (int i = 0; i < 3; i++) {
+        getline(&line, &linecap, fd);
+        sscanf(line, "Pages %*s %lld.", &value[i]);
+    }
+
+    m_info.mem_used = (value[0] + value[1] + value[2]) * 4096;
+    m_info.mem_free = (m_info.mem_total - m_info.mem_used);
+
+    pclose(fd);
+    return 0;
+}
+
+
+int get_swap(void) {
+    struct xsw_usage vmusage;
+    size_t size = sizeof(vmusage);
+
+    if (sysctlbyname("vm.swapusage", &vmusage, &size, NULL, 0) != 0) {
+        fprintf(stderr, "Could not collect VM info, errno %d - %s",
+                errno, strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+
+    m_info.swap_total = vmusage.xsu_total;
+    m_info.swap_used  = vmusage.xsu_used;
+    m_info.swap_free  = vmusage.xsu_avail;
+
+    return 0;
+}
+
+
+char* fmt(char base, int64_t bytes) {
+    char* output = malloc(30);
+    if (base == 'g') {
+        sprintf(output, "%.02lf %s", (float)bytes / 1024 / 1024 / 1024, "GB");
+    } else if (base == 'm') {
+        sprintf(output, "%lld %s", bytes / 1024 / 1024, "MB");
+    } else if (base == 'k') {
+        sprintf(output, "%lld %s", bytes / 1024, "KB");
+    } else {
+        sprintf(output, "%lld %s", bytes, "B");
+    }
+	return output;
+}
+
 
 int get_free(char base) {
     if (get_total_mem() != 0)
@@ -40,12 +133,46 @@ int get_free(char base) {
     if (get_swap() != 0)
         printf("Could not obtain swap memory\n");
 
-    printf("\t%10s\t%10s\t%10s\n", "Total", "Used", "Free");
-    printf("Mem:\t%10ld\t%10ld\t%10ld\n", fmt(base, m_info.mem_total),fmt(base, m_info.mem_used),fmt(base, m_info.mem_free));
-    printf("Swap:\t%10ld\t%10ld\t%10ld\n", fmt(base, m_info.swap_total),fmt(base, m_info.swap_used),fmt(base, m_info.swap_free));
+    printf("\t%11s\t%11s\t%11s\n", "Total", "Used", "Free");
+    printf("Mem:\t%14s\t%14s\t%14s\n",
+            fmt(base, m_info.mem_total),
+            fmt(base, m_info.mem_used),
+            fmt(base, m_info.mem_free));
+    printf("Swap:\t%14s\t%14s\t%14s\n",
+            fmt(base, m_info.swap_total),
+            fmt(base, m_info.swap_used),
+            fmt(base, m_info.swap_free));
 
     return 0;
 }
+
+
+int show_help(void) {
+    printf("Usage: %s [OPTION]...\n\n\
+Options:\n \
+    -b\t\tdisplay memory usage in bytes\n \
+    -k\t\tdisplay memory usage in kilobytes\n \
+    -m\t\tdisplay memory usage in megabytes\n \
+    -g\t\tdisplay memory usage in gigabytes\n \
+    -s [delay]\tdisplay updated usage every [delay] seconds\n \
+    -h\t\tdisplay this help\n \
+    -V\tdisplay version information\n\n \
+Report bugs to <bulliver@gmail.com>\n", APPNAME);
+    return 0;
+}
+
+
+int show_version(void) {
+    printf("OS X %s version %s\n", APPNAME, APPVERSION);
+    return 0;
+}
+
+
+void signal_handler(int signal) {
+    printf("Caught SIGINT (signal %d). Exiting...\n", signal);
+    exit(0);
+}
+
 
 int main(int argc, char *argv[]) {
     int ch;
@@ -53,7 +180,9 @@ int main(int argc, char *argv[]) {
     int poll_freq;
     char base;
 
-    while ((ch = getopt(argc, argv, "hVbkms:")) != -1) {
+    signal(SIGINT, signal_handler);
+
+    while ((ch = getopt(argc, argv, "hVbgkms:")) != -1) {
         switch (ch) {
             case 'b':
                 base = 'b';
@@ -63,6 +192,9 @@ int main(int argc, char *argv[]) {
                 break;
             case 'm':
                 base = 'm';
+                break;
+            case 'g':
+                base = 'g';
                 break;
             case 's':
                 polling = 1;
