@@ -84,6 +84,7 @@ int get_used_mem(void) {
         sscanf(line, "Pages %*s %lld.", &value[i]);
     }
 
+    // result returned in pages; page size is 4096 bytes
     m_info.mem_used = (value[0] + value[1] + value[2]) * 4096;
     m_info.mem_free = (m_info.mem_total - m_info.mem_used);
 
@@ -110,22 +111,22 @@ int get_swap(void) {
 }
 
 
-char* fmt(char base, int64_t bytes) {
-    char* output = malloc(30);
+void fmt(char base, int64_t bytes, char* output, size_t outputSize) {
     if (base == 'g') {
-        sprintf(output, "%.02lf %s", (float)bytes / 1024 / 1024 / 1024, "GB");
+        snprintf(output, outputSize, "%.02lf GB", (double)bytes / (1024 * 1024 * 1024));
     } else if (base == 'm') {
-        sprintf(output, "%lld %s", bytes / 1024 / 1024, "MB");
+        snprintf(output, outputSize, "%lld MB", bytes / (1024 * 1024));
     } else if (base == 'k') {
-        sprintf(output, "%lld %s", bytes / 1024, "KB");
+        snprintf(output, outputSize, "%lld KB", bytes / 1024);
     } else {
-        sprintf(output, "%lld %s", bytes, "B");
+        snprintf(output, outputSize, "%lld B", bytes);
     }
-	return output;
 }
 
 
 int get_free(char base) {
+    char mem_total[30], mem_used[30], mem_free[30], swap_total[30], swap_used[30], swap_free[30];
+
     if (get_total_mem() != 0)
         printf("Could not get total memory\n");
     if (get_used_mem() != 0)
@@ -133,15 +134,16 @@ int get_free(char base) {
     if (get_swap() != 0)
         printf("Could not obtain swap memory\n");
 
+    fmt(base, m_info.mem_total, mem_total, sizeof(mem_total));
+    fmt(base, m_info.mem_used, mem_used, sizeof(mem_used));
+    fmt(base, m_info.mem_free, mem_free, sizeof(mem_free));
+    fmt(base, m_info.swap_total, swap_total, sizeof(swap_total));
+    fmt(base, m_info.swap_used, swap_used, sizeof(swap_used));
+    fmt(base, m_info.swap_free, swap_free, sizeof(swap_free));
+
     printf("\t%11s\t%11s\t%11s\n", "Total", "Used", "Free");
-    printf("Mem:\t%14s\t%14s\t%14s\n",
-            fmt(base, m_info.mem_total),
-            fmt(base, m_info.mem_used),
-            fmt(base, m_info.mem_free));
-    printf("Swap:\t%14s\t%14s\t%14s\n",
-            fmt(base, m_info.swap_total),
-            fmt(base, m_info.swap_used),
-            fmt(base, m_info.swap_free));
+    printf("Mem:\t%14s\t%14s\t%14s\n", mem_total, mem_used, mem_free);
+    printf("Swap:\t%14s\t%14s\t%14s\n", swap_total, swap_used, swap_free);
 
     return 0;
 }
