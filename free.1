@@ -1,12 +1,13 @@
-.TH FREE 1 "January 2015" "User Commands"
+.TH FREE 1 "January 2024" "User Commands"
 .SH NAME
 free \- Display amount of free and used memory in the system
 .SH SYNOPSIS
 .B free
-.RI [ options ]
+.RI [ -b | -k | -m | -g ] [-hV] [-s delay]
 .SH DESCRIPTION
 .B free
-displays the total amount of free and used physical and swap memory in the
+An implementation of the venerable Unix 'free' command for OS X.
+Displays the total amount of free and used physical and swap memory in the
 system. The displayed columns are:
 .TP
 \fBtotal\fR
@@ -28,6 +29,9 @@ Display the amount of memory in kilobytes.
 .TP
 \fB\-m\fR
 Display the amount of memory in megabytes.
+.TP
+\fB\-g\fR
+Display the amount of memory in gigabytes.
 .TP
 \fB\-s\fR
 Continuously display the result delay
