@@ -37,7 +37,6 @@
 
 
 struct Meminfo {
-
     int64_t mem_total;
     int64_t mem_used;
     int64_t mem_free;
@@ -125,7 +124,8 @@ void fmt(char base, int64_t bytes, char* output, size_t outputSize) {
 
 
 int get_free(char base) {
-    char mem_total[30], mem_used[30], mem_free[30], swap_total[30], swap_used[30], swap_free[30];
+    char mem_total[30], mem_used[30], mem_free[30],
+         swap_total[30], swap_used[30], swap_free[30];
 
     if (get_total_mem() != 0)
         printf("Could not get total memory\n");
